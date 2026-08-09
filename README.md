@@ -84,11 +84,11 @@ Edit the `.env` file and insert your credentials:
 # Command Prefix (e.g., '.' or '!')
 COMMAND_PREFIX="."
 
-# Target Chat ID for startup notifications (Your Private Chat ID)
-STARTUP_NOTIFICATION_CHAT=2091967932
+# Startup notification target Chat ID (Your Private Chat ID)
+STARTUP_NOTIFICATION_CHAT=YOUR_CHAT_ID_HERE
 
 # Whitelisted Admin User IDs (Comma-separated)
-WHITELISTED_USERS="2091967932"
+WHITELISTED_USERS="YOUR_USER_ID_HERE"
 
 # Google Gemini API Key (Get a free key at https://aistudio.google.com)
 GEMINI_API_KEY="YOUR_ACTUAL_GEMINI_API_KEY_HERE"
