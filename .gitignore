@@ -1,0 +1,34 @@
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*
+
+# Personal Session & Authorization Credentials (CRITICAL SECURITY)
+session.bale
+session*.bale
+*.bale
+
+# Databases and Local Storage
+database.json
+database_backup.json
+*.json.tmp
+
+# Temporary Media, Audio & Download Cache
+temp_*
+tts_*.mp3
+*.mp3
+
+# Python Cache & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+selfbot/
+*.egg-info/
+
+# IDEs and Project Context Exports
+.vscode/
+.idea/
+project_context.txt
