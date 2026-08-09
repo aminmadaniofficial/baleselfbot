@@ -1,7 +1,6 @@
 # Environment Variables & Secrets
 .env
 .env.local
-.env.*
 
 # Personal Session & Authorization Credentials (CRITICAL SECURITY)
 session.bale
