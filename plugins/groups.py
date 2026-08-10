@@ -1,8 +1,8 @@
 import logging
 import asyncio
 import re
-from .registry import register
-from .utils import load_db, save_db, get_text_advanced
+from core.registry import register
+from core.utils import load_db, save_db, get_text_advanced
 from aiobale.types import Permissions, BoolValue
 from aiobale.enums import ChatType, GroupType
 

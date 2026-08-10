@@ -1,7 +1,7 @@
 import asyncio
 import logging
-from .registry import register
-from .utils import load_db, save_db
+from core.registry import register
+from core.utils import load_db, save_db
 from aiobale.enums import ChatType
 
 logger = logging.getLogger("Broadcast")

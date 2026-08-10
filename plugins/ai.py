@@ -4,8 +4,8 @@ import re
 import asyncio
 import logging
 import aiohttp
-from .registry import register
-from .utils import get_text_advanced, load_db, save_db
+from core.registry import register
+from core.utils import get_text_advanced, load_db, save_db
 from config import COMMAND_PREFIX
 
 logger = logging.getLogger("AI")

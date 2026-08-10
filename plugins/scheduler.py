@@ -1,8 +1,8 @@
 import asyncio
 import logging
 import time
-from .registry import register
-from .utils import load_db, save_db
+from core.registry import register
+from core.utils import load_db, save_db
 from .market import check_market_alerts
 
 logger = logging.getLogger("Scheduler")

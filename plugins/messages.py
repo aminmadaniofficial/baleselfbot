@@ -1,7 +1,7 @@
 import asyncio
 import logging
-from .registry import register
-from .utils import get_text_advanced
+from core.registry import register
+from core.utils import get_text_advanced
 from aiobale.enums import ChatType
 
 logger = logging.getLogger("Messages")

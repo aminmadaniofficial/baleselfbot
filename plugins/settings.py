@@ -1,5 +1,5 @@
-from .registry import register
-from .utils import load_db, save_db
+from core.registry import register
+from core.utils import load_db, save_db
 
 @register(["alias", "نام_مستعار"])
 async def alias_command(app, msg, chat_id, chat_type, args):

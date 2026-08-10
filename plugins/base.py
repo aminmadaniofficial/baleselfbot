@@ -2,11 +2,11 @@ import sys
 import time
 import platform
 from config import COMMAND_PREFIX
-from .registry import register
-from .utils import text_to_speech_fa, create_file_input, get_text_advanced, load_db
+from core.registry import register
+from core.utils import text_to_speech_fa, create_file_input, get_text_advanced, load_db
 
 # ==============================================================================
-# COMPREHENSIVE HELP MANUAL DICTIONARY (100% COVERAGE)
+# COMPREHENSIVE HELP MANUAL DICTIONARY (100% COVERAGE OF ALL SYSTEM COMMANDS)
 # ==============================================================================
 COMMANDS_HELP = {
     # --- BASE & INFO ---
@@ -117,6 +117,9 @@ COMMANDS_HELP = {
     "stt": {"fa": "رونویسی متن ویس صوتی [با ریپلای روی صدا]", "en": "Transcribe audio/voice message into text", "syntax": ".stt (Reply)"},
     "متن": {"fa": "رونویسی متن ویس صوتی [با ریپلای روی صدا]", "en": "Transcribe audio/voice message into text", "syntax": ".متن (ریپلای)"},
     "گفتار_به_متن": {"fa": "رونویسی متن ویس صوتی [با ریپلای روی صدا]", "en": "Transcribe audio/voice message into text", "syntax": ".گفتار_به_متن (ریپلای)"},
+    "ocr": {"fa": "بینایی هوش مصنوعی و استخراج متن از تصویر [با ریپلای روی عکس]", "en": "Extract text or analyze image via Gemini Vision", "syntax": ".ocr (Reply)"},
+    "عکس": {"fa": "بینایی هوش مصنوعی و استخراج متن از تصویر [با ریپلای روی عکس]", "en": "Extract text or analyze image via Gemini Vision", "syntax": ".عکس (ریپلای)"},
+    "استخراج_متن": {"fa": "بینایی هوش مصنوعی و استخراج متن از تصویر [با ریپلای روی عکس]", "en": "Extract text or analyze image via Gemini Vision", "syntax": ".استخراج_متن (ریپلای)"},
     "trans": {"fa": "ترجمه روان متون به زبان دلخواه [متن یا ریپلای]", "en": "Translate text to target language via Gemini", "syntax": ".trans [Language] [Text]"},
     "ترجمه": {"fa": "ترجمه روان متون به زبان دلخواه [متن یا ریپلای]", "en": "Translate text to target language via Gemini", "syntax": ".ترجمه [زبان] [متن]"},
     "models": {"fa": "مشاهده لیست کامل مدل‌های هوش مصنوعی فعال بله", "en": "List available AI models", "syntax": ".models"},
@@ -151,10 +154,12 @@ COMMANDS_HELP = {
     "del_chat": {"fa": "حذف چت جاری از لیست پایش انتخابی", "en": "Remove chat from monitoring list", "syntax": ".del_chat [CHAT_ID]"},
     "حذف_چت": {"fa": "حذف چت جاری از لیست پایش انتخابی", "en": "Remove chat from monitoring list", "syntax": ".حذف_چت [آیدی_چت]"},
 
-    # --- AUDIO & SERVICES ---
+    # --- AUDIO & UTILITY TOOLS ---
     "tts": {"fa": "تبدیل متن به ویس صوتی مایکروسافت [متن یا ریپلای]", "en": "Convert text to Persian Microsoft Speech", "syntax": ".tts [Text]"},
     "گفتار": {"fa": "تبدیل متن به ویس صوتی مایکروسافت [متن یا ریپلای]", "en": "Convert text to Persian Microsoft Speech", "syntax": ".گفتار [متن]"},
     "صدا": {"fa": "تبدیل متن به ویس صوتی مایکروسافت [متن یا ریپلای]", "en": "Convert text to Persian Microsoft Speech", "syntax": ".صدا [متن]"},
+    "qr": {"fa": "ساخت تصویر بارکد QR سفارشی [متن یا لینک]", "en": "Generate high-res QR code image for text/url", "syntax": ".qr [Text/URL]"},
+    "بارکد": {"fa": "ساخت تصویر بارکد QR سفارشی [متن یا لینک]", "en": "Generate high-res QR code image for text/url", "syntax": ".بارکد [متن/لینک]"},
     "weather": {"fa": "مشاهده وضعیت آب و هوای تهران", "en": "Fetch current weather statistics", "syntax": ".weather"},
     "هوا": {"fa": "مشاهده وضعیت آب و هوای تهران", "en": "Fetch current weather statistics", "syntax": ".هوا"},
     "quran": {"fa": "دریافت آیه تصادفی قرآن همراه با ترجمه", "en": "Retrieve Quranic ayah with translation", "syntax": ".quran"},
@@ -190,7 +195,15 @@ COMMANDS_HELP = {
     "del_reply": {"fa": "حذف پاسخ هوشمند خودکار [کلمه کلیدی]", "en": "Delete target automatic trigger reply", "syntax": ".del_reply [Word]"},
     "حذف_پاسخ": {"fa": "حذف پاسخ هوشمند خودکار [کلمه کلیدی]", "en": "Delete target automatic trigger reply", "syntax": ".حذف_پاسخ [کلمه]"},
 
-    # --- SYSTEM & TERMINAL ---
+    # --- PLUGINS & SYSTEM ---
+    "plugins": {"fa": "مشاهده لیست کامل پلاگین‌های فعال و غیرفعال", "en": "List all active and disabled plugins", "syntax": ".plugins"},
+    "پلاگین‌ها": {"fa": "مشاهده لیست کامل پلاگین‌های فعال و غیرفعال", "en": "List all active and disabled plugins", "syntax": ".پلاگین‌ها"},
+    "disable": {"fa": "غیرفعال‌سازی دستی و آنی یک پلاگین [نام]", "en": "Disable an active plugin dynamically", "syntax": ".disable [Plugin Name]"},
+    "غیرفعال": {"fa": "غیرفعال‌سازی دستی و آنی یک پلاگین [نام]", "en": "Disable an active plugin dynamically", "syntax": ".غیرفعال [نام_پلاگین]"},
+    "enable": {"fa": "فعال‌سازی مجدد یک پلاگین غیرفعال [نام]", "en": "Enable a disabled plugin dynamically", "syntax": ".enable [Plugin Name]"},
+    "فعال": {"fa": "فعال‌سازی مجدد یک پلاگین غیرفعال [نام]", "en": "Enable a disabled plugin dynamically", "syntax": ".فعال [نام_پلاگین]"},
+    "reload": {"fa": "بارگذاری زنده و آنی تمام پلاگین‌ها بدون ریستارت", "en": "Reload all plugins dynamically in runtime", "syntax": ".reload"},
+    "ریلود": {"fa": "بارگذاری زنده و آنی تمام پلاگین‌ها بدون ریستارت", "en": "Reload all plugins dynamically in runtime", "syntax": ".ریلود"},
     "sys": {"fa": "مشاهده وضعیت سلامت رم، پردازنده و هاست", "en": "Show CPU and RAM utilization diagnostics", "syntax": ".sys"},
     "سیستم": {"fa": "مشاهده وضعیت سلامت رم، پردازنده و هاست", "en": "Show CPU and RAM utilization diagnostics", "syntax": ".سیستم"},
     "shell": {"fa": "اجرای مستقیم دستور در ترمینال لینوکس [دستور شل]", "en": "Run Linux shell command and fetch output", "syntax": ".shell [Linux Command]"},
@@ -242,7 +255,7 @@ async def font_command(app, msg, chat_id, chat_type, args):
     fonts = [
         ("𝖲𝖺𝗇𝗌", text_input.translate(str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", "𝖺𝖻𝖼𝖽𝖾𝖿𝗀𝗁𝗂爆𝗄𝗅𝗆𝗇𝗈𝗉𝗊𝗋𝗌𝗍𝗎𝗏𝗐𝗑𝗒𝗓𝖠𝖡𝖢𝖣𝖤𝖥𝖦𝖧𝖨𝖩𝖪𝖫𝖬𝖭𝖮𝖯𝖰𝖱𝖲𝖳𝖴𝖵𝖶𝖷𝖸𝖹"))),
         ("𝑩𝒐𝒍𝒅", text_input.translate(str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", "𝒂𝒃𝒄𝒅𝒆𝒇𝒈𝒉𝒊𝒋𝒌𝒍𝒎𝒏𝒐𝒑𝒒𝒓𝒔𝒕𝒖𝒗𝒘𝒙𝒚𝒛𝑨𝑩𝑪𝑫𝑬𝑭𝑮𝑯𝑰𝑵𝑲𝑳𝑴𝑵𝑶𝑷𝑸𝑹𝑺𝑻𝑼𝑽𝑾𝑿𝒀𝒁"))),
-        ("𝙼𝚘𝚗𝚘", text_input.translate(str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", "𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝗍𝚞𝚟𝚠𝚡𝚢𝚣𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝙌𝚁𝚂𝚃𝚄𝚅𝚆𝚇𝚈𝚈"))),
+        ("𝙼𝚘𝚗𝚘", text_input.translate(str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", "𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝗍𝚞𝚟𝚠𝚡𝚢𝚣𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝙌𝚁𝚂𝑻𝚄𝑉𝚆𝚇𝚈𝑌"))),
     ]
 
     out = "🎨 *فونت‌های ساخت‌شده:*\n\n"
@@ -283,22 +296,92 @@ async def help_command(app, msg, chat_id, chat_type, args):
         await app.send_message(chat_id=chat_id, text=text, chat_type=chat_type)
         return
 
-    # 2. Complete English Manual
+    # 2. Complete English Manual (Fully detailed parity with Persian version)
     if arg_clean == "en":
         help_text = (
-            f"🇬🇧 *Bale SelfBot Control Center (Prefix: '{prefix}'):*\n\n"
-            f"📌 *Core & Info:* `ping`, `stats`, `whoami`, `id`, `info`, `font`\n"
-            f"💬 *Messages:* `del`, `delete_messages`, `pin`, `unpin`, `edit`, `fwd`, `seen`\n"
-            f"👥 *Group Admins:* `kick`, `ban`, `unban`, `make_admin`, `lock`, `unlock`, `welcome`\n"
-            f"🧠 *AI & Multimodal:* `askgpt`, `heavygpt`, `yt`, `stt`, `trans`, `models`\n"
-            f"📈 *Market & Money:* `rates`, `market`, `alert`, `alerts`, `wallet`\n"
-            f"🎯 *Chat Monitor:* `chat_mode`, `chats`, `add_chat`, `del_chat`\n"
-            f"🗣 *Audio & Tools:* `tts`, `weather`, `crypto`, `time`, `quran`\n"
-            f"📢 *Broadcast:* `extract_members`, `broadcast`\n"
-            f"⏰ *Reminders:* `remind`\n"
-            f"⚙️ *Settings:* `alias`, `aliases`, `add_reply`, `replies`\n"
-            f"🖥️ *System:* `sys`, `shell`, `backup`\n\n"
-            f"💡 *Type `{prefix}help [command]` for detailed manual of a command!*"
+            f"🇬🇧 ═══ **BALE SELFBOT CONTROL CENTER** ═══\n"
+            f"🔑 *Active Prefix:* `{prefix}`\n\n"
+
+            f"🔰 **1. Base & Specifications:**\n"
+            f"• `{prefix}help` / `{prefix}help [command]` : Comprehensive help menu\n"
+            f"• `{prefix}ping` : Calculate network latency\n"
+            f"• `{prefix}id` : Get current User ID and Chat ID\n"
+            f"• `{prefix}whoami` : Display personal profile specifications\n"
+            f"• `{prefix}info` [Reply/ID] : Get detailed specs of a user\n"
+            f"• `{prefix}stats` : Display system CPU, RAM and Python status\n"
+            f"• `{prefix}font` [English Text] : Generate aesthetic text styles\n\n"
+
+            f"💬 **2. Message & Conversation Operations:**\n"
+            f"• `{prefix}del` : Delete replied message (Two-way deletion)\n"
+            f"• `{prefix}purge` [Count] : Bulk delete self-sent messages\n"
+            f"• `{prefix}edit` [Text] : Edit your own message via reply\n"
+            f"• `{prefix}pin` / `{prefix}unpin` : Pin or unpin replied message\n"
+            f"• `{prefix}unpin_all` : Clear all pinned messages in chat\n"
+            f"• `{prefix}pinned` : List all pinned messages in current chat\n"
+            f"• `{prefix}fwd` [Chat_ID] : Forward replied message to target chat\n"
+            f"• `{prefix}seen` : Mark current conversation room as read\n"
+            f"• `{prefix}dialogs` : List top 10 recent active chats\n\n"
+
+            f"👥 **3. Group Moderation & Administration:**\n"
+            f"• `{prefix}group_info` / `{prefix}grouplink` : Group specifications and invite link\n"
+            f"• `{prefix}revoke_link` : Revoke old link and generate new link\n"
+            f"• `{prefix}kick` [Reply/ID] : Kick user from group\n"
+            f"• `{prefix}ban` / `{prefix}unban` [Reply/ID] : Ban or unban user from sending messages\n"
+            f"• `{prefix}make_admin` / `{prefix}remove_admin` : Promote or demote group admins\n"
+            f"• `{prefix}lock` [media/links] : Lock group chat, media or link sharing\n"
+            f"• `{prefix}unlock` [Type] : Unlock group restrictions\n"
+            f"• `{prefix}members` / `{prefix}banned` : List group members or banned users\n"
+            f"• `{prefix}welcome` / `{prefix}goodbye` [Text] : Configure automated greetings\n"
+            f"• `{prefix}poll` / `{prefix}slowmode` : Send poll template or set slowmode\n\n"
+
+            f"🧠 **4. AI & Multimodal Intelligence (Gemini):**\n"
+            f"• `{prefix}askgpt` [Prompt] : Query Gemini Flash-Lite model\n"
+            f"• `{prefix}heavygpt` [Prompt] : Query Gemini 3.5 Flash high-reasoning model\n"
+            f"• `{prefix}fastgpt` [Prompt] : Query Gemma 4 ultra-fast model\n"
+            f"• `{prefix}trans` [Lang] [Text] : Translate text to target language via Gemini\n"
+            f"• `{prefix}yt` [URL] : Deep analysis of YouTube video URL (Zero local net)\n"
+            f"• `{prefix}stt` (Voice Reply) : Transcribe voice message to Persian text\n"
+            f"• `{prefix}ocr` (Image Reply) : Extract text from image via Gemini Vision\n"
+            f"• `{prefix}models` : Display active AI models list\n\n"
+
+            f"📈 **5. Market, Gold, Currency & Crypto:**\n"
+            f"• `{prefix}rates` / `{prefix}market` : Real-time Gold, Coins, Currency & Crypto board\n"
+            f"• `{prefix}alert` [Symbol] [> or <] [Price] : Set market price alert threshold\n"
+            f"• `{prefix}alerts` : List all active registered price alerts\n"
+            f"• `{prefix}toggle_alert` [ID] / `{prefix}del_alert` [ID] : Manage price alerts\n"
+            f"• `{prefix}wallet` : View digital wallet balance in Rial\n\n"
+
+            f"🎯 **6. Chat Monitoring Control:**\n"
+            f"• `{prefix}chat_mode` [all/selected] : Switch monitoring mode\n"
+            f"• `{prefix}chats` : List selected monitored chats\n"
+            f"• `{prefix}add_chat` / `{prefix}del_chat` : Add or remove current chat from monitor list\n\n"
+
+            f"🗣 **7. Audio & Utility Tools:**\n"
+            f"• `{prefix}tts` [Text] : Convert text to Microsoft Neural Persian Speech\n"
+            f"• `{prefix}qr` [Text/URL] : Generate high-resolution QR code photo\n"
+            f"• `{prefix}weather` / `{prefix}time` / `{prefix}date` : Weather, time and date stats\n"
+            f"• `{prefix}quran` / `{prefix}crypto` : Random Ayah and Bitcoin price\n\n"
+
+            f"📢 **8. Broadcast & Member Extraction:**\n"
+            f"• `{prefix}extract_members` : Extract group member IDs to database\n"
+            f"• `{prefix}broadcast` [Text] : Broadcast message to all active chats\n\n"
+
+            f"⏰ **9. Scheduler & Reminders:**\n"
+            f"• `{prefix}remind` [Minutes] [Text] : Set a future reminder\n\n"
+
+            f"⚙️ **10. Settings, Shortcuts & Auto-Replies:**\n"
+            f"• `{prefix}alias` / `{prefix}aliases` : Manage custom command shortcuts\n"
+            f"• `{prefix}add_reply` / `{prefix}replies` : Manage automatic keyword replies\n\n"
+
+            f"🖥️ **11. System, Plugins & Terminal Firewall:**\n"
+            f"• `{prefix}plugins` : List all active and disabled plugins\n"
+            f"• `{prefix}disable` [Plugin] / `{prefix}enable` [Plugin] : Enable/disable plugin\n"
+            f"• `{prefix}reload` : Reload all plugins dynamically in runtime\n"
+            f"• `{prefix}sys` : CPU and RAM usage diagnostics\n"
+            f"• `{prefix}shell` [Linux Command] : Execute terminal commands safely\n"
+            f"• `{prefix}backup` : Backup local database configurations\n\n"
+
+            f"💡 *Type `{prefix}help [command]` for detailed manual of a specific command!*"
         )
         await app.send_message(chat_id=chat_id, text=help_text, chat_type=chat_type)
         return
@@ -347,6 +430,7 @@ async def help_command(app, msg, chat_id, chat_type, args):
         f"• `{prefix}ترجمه` / `{prefix}trans` [زبان] [متن] : ترجمه روان متون به زبان دلخواه\n"
         f"• `{prefix}یوتیوب` / `{prefix}yt` [لینک] : تحلیل ویدیوهای یوتیوب (بدون مصرف حجم سرور)\n"
         f"• `{prefix}متن` / `{prefix}stt` (ریپلای رو ویس) : رونویسی صوت و ویس به متن فارسی\n"
+        f"• `{prefix}عکس` / `{prefix}ocr` (ریپلای رو عکس) : استخراج متن و بینایی هوش مصنوعی\n"
         f"• `{prefix}مدل‌ها` : نمایش تمام مدل‌های هوش مصنوعی فعال\n\n"
 
         f"📈 **۵. بازار، طلا، ارز و مالی:**\n"
@@ -364,8 +448,12 @@ async def help_command(app, msg, chat_id, chat_type, args):
 
         f"🗣 **۷. صدا و ابزارهای کاربردی:**\n"
         f"• `{prefix}گفتار` / `{prefix}tts` [متن] : تبدیل متن به ویس با صدای نیورال مایکروسافت\n"
-        f"• `{prefix}هوا` / `{prefix}ساعت` / `{prefix}تاریخ` : وضعیت آب‌وهوا، زمان و تاریخ\n"
-        f"• `{prefix}قرآن` / `{prefix}رمزارز` : آیه تصادفی و قیمت بیت‌کوین\n\n"
+        f"• `{prefix}اذان` / `{prefix}azan` [نام شهر] : دریافت اوقات شرعی دقیق شهرها\n"
+        f"• `{prefix}دانلود` / `{prefix}dl` [لینک] : دانلود مستقیم فایل از وب و آپلود در بله\n"
+        f"• `{prefix}ویکی` / `{prefix}wiki` [موضوع] : جستجوی خلاصه مقاله در دانشنامه ویکی‌پدیا\n"
+        f"• `{prefix}بارکد` / `{prefix}qr` [متن/لینک] : ساخت عکس بارکد QR سفارشی\n"
+        f"• `{prefix}هوا` / `{prefix}ساعت` / `{prefix}تاریخ` : وضعیت آب‌وهوا، زمان و تاریخ\n\n"
+
 
         f"📢 **۸. پخش همگانی و استخراج:**\n"
         f"• `{prefix}استخراج` : استخراج آیدی عددی اعضای گروه در دیتابیس\n"
@@ -378,13 +466,18 @@ async def help_command(app, msg, chat_id, chat_type, args):
         f"• `{prefix}نام_مستعار` / `{prefix}لیست_مستعار` : ساخت کلید میانبر دستورات\n"
         f"• `{prefix}افزودن_پاسخ` / `{prefix}پاسخ‌ها` : پاسخ هوشمند خودکار به کلمات\n\n"
 
-        f"🖥️ **۱۱. سیستم و ترمینال هاست:**\n"
+        f"🖥️ **۱۱. سیستم، پلاگین‌ها و ترمینال هاست:**\n"
+        f"• `{prefix}پلاگین‌ها` / `{prefix}plugins` : لیست تمام پلاگین‌های فعال و غیرفعال\n"
+        f"• `{prefix}غیرفعال` / `{prefix}disable` [نام] : غیرفعال‌سازی دستی یک پلاگین\n"
+        f"• `{prefix}فعال` / `{prefix}enable` [نام] : فعال‌سازی مجدد یک پلاگین\n"
+        f"• `{prefix}ریلود` / `{prefix}reload` : بارگذاری زنده و آنی تمام پلاگین‌ها\n"
         f"• `{prefix}سیستم` / `{prefix}sys` : آمار رم و پردازنده هاست\n"
         f"• `{prefix}شل` [دستور لینوکس] : اجرای مستقیم دستورات ترمینال\n"
         f"• `{prefix}بکاپ` : تهیه نسخه پشتیبان از دیتابیس تنظیمات\n\n"
+        f"• `{prefix}اجرا` / `{prefix}run` [کد پایتون] : اجرای مستقیم تکه‌کدهای پایتون در چت\n"
 
         f"💡 **برای راهنمای اختصاصی و نحوه استفاده هر دستور:**\n"
-        f"`{prefix}help [اسم دستور]` (مثلا: `{prefix}help ارز` یا `{prefix}help alert` یا `{prefix}help ترجمه`)"
+        f"`{prefix}help [اسم دستور]` (مثلا: `{prefix}help ocr` یا `{prefix}help qr` یا `{prefix}help plugins`)"
     )
     await app.send_message(chat_id=chat_id, text=help_text, chat_type=chat_type)
 
@@ -394,7 +487,7 @@ async def stats_command(app, msg, chat_id, chat_type, args):
     """Displays system diagnostics and active commands count."""
     py_version = sys.version.split()[0]
     os_name = platform.system() + " " + platform.release()
-    from modules.registry import COMMANDS
+    from core.registry import COMMANDS
     stats_text = (
         f"📊 *آمار و سلامت سلف‌بات:*\n\n"
         f"• *سیستم‌عامل:* `{os_name}`\n"

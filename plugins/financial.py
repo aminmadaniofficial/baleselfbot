@@ -1,5 +1,5 @@
 import logging
-from .registry import register
+from core.registry import register
 
 logger = logging.getLogger("Financial")
 

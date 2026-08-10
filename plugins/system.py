@@ -2,7 +2,7 @@ import re
 import subprocess
 import logging
 import shutil
-from .registry import register
+from core.registry import register
 
 logger = logging.getLogger("System")
 

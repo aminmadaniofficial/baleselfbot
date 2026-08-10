@@ -24,7 +24,7 @@ for logger_name in logging.root.manager.loggerDict:
 
 
 # ==============================================================================
-# ULTIMATE FIX: DEEP NESTED DICT UNWRAPPER & PYDANTIC CONTEXT PATCH
+# ULTIMATE FIX: DEEP NESTED DICT UNWRAPPER & CONTEXT BINDER FOR AIOBALE
 # ==============================================================================
 def deep_clean_bale_dict(obj):
     """
@@ -117,12 +117,18 @@ AiohttpSession.post = _patched_aiohttp_post
 # ==============================================================================
 
 
-# Import submodules to register all commands
-import modules
-from modules.registry import route_command
-from modules.groups import check_group_locks
-from modules.utils import get_text_advanced, load_db, save_db
-from modules.scheduler import run_background_scheduler
+# DYNAMIC PLUGIN LOADER: Imports all plugins from /plugins directory
+from core.plugin_loader import load_all_plugins
+loaded_plugins = load_all_plugins("plugins")
+logger.info(f"Total active plugins loaded: {len(loaded_plugins)} -> {loaded_plugins}")
+
+# Import Core Framework Services
+from core.registry import route_command, COMMANDS
+from core.utils import get_text_advanced, load_db, save_db
+from plugins.scheduler import run_background_scheduler
+from plugins.groups import check_group_locks
+
+logger.info(f"Total active registered commands in system: {len(COMMANDS)}")
 
 
 async def get_me_with_retry(app_client, max_retries: int = 5):
@@ -142,11 +148,23 @@ async def get_me_with_retry(app_client, max_retries: int = 5):
     raise RuntimeError("Failed to authenticate with Bale server after multiple retries due to network timeout.")
 
 
+async def fetch_chat_history_safe(app_client, chat_id, chat_type):
+    """Asynchronously fetches chat history in parallel for maximum speed."""
+    try:
+        history = await asyncio.wait_for(
+            app_client.load_history(chat_id=chat_id, chat_type=chat_type, limit=3),
+            timeout=5.0
+        )
+        return chat_id, chat_type, history
+    except Exception:
+        return chat_id, chat_type, []
+
+
 async def main():
     async with app:
         me = await get_me_with_retry(app, max_retries=5)
         logger.info(f"Bale Self-Bot successfully authenticated as: {me.name} (ID: {me.id})")
-        
+
         # Ensure known chats database list exists and seed with current group ID
         db = load_db()
         if "known_chats" not in db:
@@ -167,7 +185,7 @@ async def main():
                 await asyncio.wait_for(
                     app.send_message(
                         chat_id=STARTUP_NOTIFICATION_CHAT,
-                        text="🚀 **سلف‌بات بله فعال شد!**\nگروه «سلف سرویس» و تمام چت‌ها در حال پایش هستند.",
+                        text="🚀 **سلف‌بات بله (موتور موازی فوق‌سریع) فعال شد!**",
                         chat_type=ChatType.PRIVATE
                     ),
                     timeout=15.0
@@ -178,55 +196,69 @@ async def main():
 
         last_mids = {}
         processed_mids = set()
-        logger.info("Starting robust polling loop...")
+        logger.info("Starting high-speed parallel polling loop...")
 
         while True:
             try:
                 # 1. Fetch active dialogs safely
                 dialogs = []
                 try:
-                    dialogs = await asyncio.wait_for(app.load_dialogs(limit=25), timeout=15.0)
+                    dialogs = await asyncio.wait_for(app.load_dialogs(limit=25), timeout=10.0)
                 except Exception:
                     pass  # Silently fallback to known_chats list
 
                 # 2. Build target chats list
                 chat_targets = []
                 db = load_db()
-                known_chats = db.get("known_chats", [5805101074])
 
-                for d in dialogs:
-                    c_type = int(d.peer.type)
-                    if c_type in (1, 2):
-                        chat_targets.append((d.peer.id, c_type))
-                        if d.peer.id not in known_chats:
-                            known_chats.append(d.peer.id)
-                            db["known_chats"] = known_chats
-                            save_db(db)
+                # Read monitor settings from database
+                monitor_config = db.get("monitor_settings", {"mode": "all", "selected_chats": [5805101074]})
+                monitor_mode = monitor_config.get("mode", "all")
+                selected_chats = monitor_config.get("selected_chats", [5805101074])
 
-                # Fallback: Always poll known chats from database
-                for known_id in known_chats:
-                    if not any(c[0] == known_id for c in chat_targets):
-                        c_type = 2 if (known_id > 1000000 or str(known_id).startswith("580")) else 1
-                        chat_targets.append((known_id, c_type))
+                # Safety Fallback: Auto-reset to 'all' if selected list becomes empty
+                if monitor_mode == "selected" and not selected_chats:
+                    monitor_mode = "all"
+                    monitor_config["mode"] = "all"
+                    db["monitor_settings"] = monitor_config
+                    save_db(db)
+
+                if monitor_mode == "selected":
+                    for sel_id in selected_chats:
+                        c_type = 2 if (sel_id > 1000000 or str(sel_id).startswith("580")) else 1
+                        chat_targets.append((sel_id, c_type))
+                else:
+                    known_chats = db.get("known_chats", [5805101074])
+                    for d in dialogs:
+                        c_type = int(d.peer.type)
+                        if c_type in (1, 2):
+                            chat_targets.append((d.peer.id, c_type))
+                            if d.peer.id not in known_chats:
+                                known_chats.append(d.peer.id)
+                                db["known_chats"] = known_chats
+                                save_db(db)
+
+                    for known_id in known_chats:
+                        if not any(c[0] == known_id for c in chat_targets):
+                            c_type = 2 if (known_id > 1000000 or str(known_id).startswith("580")) else 1
+                            chat_targets.append((known_id, c_type))
 
                 # Always guarantee Saved Messages (me.id) is included
                 if not any(c[0] == me.id for c in chat_targets):
                     chat_targets.insert(0, (me.id, 1))
 
-                # 3. Poll recent messages across target chats (limit=3 to avoid missing commands)
-                for chat_id, chat_type in chat_targets:
-                    try:
-                        history = await asyncio.wait_for(
-                            app.load_history(chat_id=chat_id, chat_type=chat_type, limit=3),
-                            timeout=10.0
-                        )
-                    except Exception:
+                # 3. HIGH-SPEED PARALLEL POLLING VIA ASYNCIO GATHER
+                tasks = [fetch_chat_history_safe(app, c_id, c_type) for c_id, c_type in chat_targets]
+                polling_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                for res in polling_results:
+                    if isinstance(res, Exception) or not res:
                         continue
 
+                    chat_id, chat_type, history = res
                     if not history:
                         continue
 
-                    # Iterate chronological order to process oldest unhandled message first
                     for msg in reversed(history):
                         mid = getattr(msg, 'message_id', None)
 
@@ -257,25 +289,26 @@ async def main():
 
                                 if is_ai_reply:
                                     logger.info(f"🧠 [AI REPLY DETECTED] Continuing conversation in chat {chat_id}")
-                                    from modules.ai import askgpt_command
+                                    from plugins.ai import askgpt_command
                                     await askgpt_command(app, msg, chat_id, chat_type, args=raw_text)
                                 else:
                                     await route_command(app, msg, chat_id, chat_type)
                             else:
                                 await check_group_locks(app, msg, chat_id, chat_type)
 
-                await asyncio.sleep(1.5)
+                # Ultra-fast polling interval
+                await asyncio.sleep(0.4)
 
             except (TimeoutError, asyncio.TimeoutError):
-                logger.warning("Network request timed out in loop. Retrying in 3 seconds...")
-                await asyncio.sleep(3)
+                logger.warning("Network request timed out in loop. Retrying in 2 seconds...")
+                await asyncio.sleep(2)
             except Exception as e:
                 if "rate_limited" in str(e).lower():
-                    logger.warning("Rate limit warning detected, sleeping for 20 seconds...")
-                    await asyncio.sleep(20)
+                    logger.warning("Rate limit warning detected, sleeping for 15 seconds...")
+                    await asyncio.sleep(15)
                 else:
                     logger.error(f"Error in polling loop: {e}", exc_info=True)
-                    await asyncio.sleep(3)
+                    await asyncio.sleep(2)
 
 
 if __name__ == "__main__":

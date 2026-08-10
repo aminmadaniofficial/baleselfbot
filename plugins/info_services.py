@@ -3,8 +3,8 @@ import logging
 import aiohttp
 from datetime import datetime
 from gtts import gTTS
-from .registry import register
-from .utils import text_to_speech_fa, create_file_input, get_text_advanced
+from core.registry import register
+from core.utils import text_to_speech_fa, create_file_input, get_text_advanced
 
 logger = logging.getLogger("InfoServices")
 

@@ -1,6 +1,6 @@
 import logging
 from config import COMMAND_PREFIX
-from .utils import get_text_advanced, load_db
+from core.utils import get_text_advanced, load_db
 from aiobale.enums import ChatType
 
 logger = logging.getLogger("Registry")
@@ -8,11 +8,13 @@ logger = logging.getLogger("Registry")
 # Central dictionary mapping lowercased triggers to handler functions
 COMMANDS = {}
 
+
 def normalize_text(text: str) -> str:
     """Normalizes Persian and Arabic characters (e.g. convert 'ك' to 'ک' and 'ى' to 'ی')."""
     if not text:
         return ""
     return text.replace('ك', 'ک').replace('ى', 'ی').strip().lower()
+
 
 def register(triggers):
     """
@@ -30,6 +32,7 @@ def register(triggers):
             COMMANDS[clean_trig] = func
         return func
     return decorator
+
 
 async def route_command(app, msg, chat_id, chat_type):
     """Parses message text and executes the matched command handler."""
@@ -60,11 +63,11 @@ async def route_command(app, msg, chat_id, chat_type):
     if trigger_word in aliases:
         trigger_word = normalize_text(aliases[trigger_word])
 
-    # 1. Execute registered commands (e.g. راهنما, help, ping, id, بپرس)
+    # 1. Execute registered commands
     if trigger_word in COMMANDS:
         handler = COMMANDS[trigger_word]
         logger.info(f"⚡ [EXECUTING COMMAND] '{trigger_word}' in chat {chat_id}")
-        
+
         try:
             enum_chat_type = ChatType(chat_type)
         except Exception:
@@ -81,8 +84,6 @@ async def route_command(app, msg, chat_id, chat_type):
         custom_replies = db.get("custom_replies", {})
         if trigger_word in custom_replies and db.get("replies_active", True):
             target_reply = custom_replies[trigger_word]
-            
-            # PREVENT INFINITE LOOP: Do not re-send auto-reply if message IS ALREADY the auto-reply text
             if text.strip() != target_reply.strip():
                 try:
                     enum_chat_type = ChatType(chat_type)

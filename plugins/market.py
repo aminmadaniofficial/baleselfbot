@@ -3,8 +3,8 @@ import time
 import logging
 import aiohttp
 from typing import Dict, Any, List
-from .registry import register
-from .utils import load_db, save_db
+from core.registry import register
+from core.utils import load_db, save_db
 
 logger = logging.getLogger("MarketServices")
 
