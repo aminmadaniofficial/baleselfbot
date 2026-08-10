@@ -24,7 +24,7 @@ for logger_name in logging.root.manager.loggerDict:
 
 
 # ==============================================================================
-# ULTIMATE FIX: DEEP NESTED DICT UNWRAPPER & CONTEXT BINDER FOR AIOBALE
+# ULTIMATE FIX: DEEP NESTED DICT UNWRAPPER & PYDANTIC CONTEXT PATCH
 # ==============================================================================
 def deep_clean_bale_dict(obj):
     """
@@ -110,32 +110,8 @@ if hasattr(app, "session"):
 _orig_aiohttp_post = AiohttpSession.post
 
 async def _patched_aiohttp_post(self, method, *args, **kwargs):
-    """
-    Patched AiohttpSession.post that cleans Protobuf dicts and passes context={"client": app}
-    to Pydantic model_validate, completely eliminating AttributeError in MessageResponse.
-    """
-    raw_res = await self.make_request(method, *args, **kwargs)
-    cleaned_res = deep_clean_bale_dict(raw_res)
-
-    client_ref = getattr(self, "client", None) or getattr(self, "_client", None) or app
-    ctx = {"client": client_ref}
-
-    if hasattr(method, "__returning__") and method.__returning__:
-        try:
-            return method.__returning__.model_validate(cleaned_res, context=ctx)
-        except AttributeError as ae:
-            if "'NoneType' object has no attribute 'get'" in str(ae):
-                try:
-                    return method.__returning__.model_validate(cleaned_res, context={"client": app})
-                except Exception:
-                    return method.__returning__.model_construct(**cleaned_res) if hasattr(method.__returning__, "model_construct") else cleaned_res
-            raise ae
-        except Exception:
-            try:
-                return method.__returning__.model_validate(cleaned_res, context=ctx)
-            except Exception:
-                return cleaned_res
-    return cleaned_res
+    """Pass-through wrapper forwarding native arguments to aiobale AiohttpSession.post."""
+    return await _orig_aiohttp_post(self, method, *args, **kwargs)
 
 AiohttpSession.post = _patched_aiohttp_post
 # ==============================================================================
@@ -237,11 +213,11 @@ async def main():
                 if not any(c[0] == me.id for c in chat_targets):
                     chat_targets.insert(0, (me.id, 1))
 
-                # 3. Poll messages across target chats
+                # 3. Poll recent messages across target chats (limit=3 to avoid missing commands)
                 for chat_id, chat_type in chat_targets:
                     try:
                         history = await asyncio.wait_for(
-                            app.load_history(chat_id=chat_id, chat_type=chat_type, limit=1),
+                            app.load_history(chat_id=chat_id, chat_type=chat_type, limit=3),
                             timeout=10.0
                         )
                     except Exception:
@@ -250,43 +226,43 @@ async def main():
                     if not history:
                         continue
 
-                    msg = history[0]
-                    mid = getattr(msg, 'message_id', None)
+                    # Iterate chronological order to process oldest unhandled message first
+                    for msg in reversed(history):
+                        mid = getattr(msg, 'message_id', None)
 
-                    # Detect new incoming or self-sent messages (Ensuring ZERO double execution)
-                    if mid and (mid not in processed_mids) and (chat_id not in last_mids or last_mids[chat_id] != mid):
-                        last_mids[chat_id] = mid
-                        processed_mids.add(mid)
-                        if len(processed_mids) > 500:
-                            processed_mids.clear()
+                        # Detect unhandled messages
+                        if mid and (mid not in processed_mids) and (chat_id not in last_mids or last_mids[chat_id] != mid):
+                            last_mids[chat_id] = mid
+                            processed_mids.add(mid)
+                            if len(processed_mids) > 500:
+                                processed_mids.clear()
 
-                        raw_text = get_text_advanced(msg).strip()
+                            raw_text = get_text_advanced(msg).strip()
 
-                        logger.info(f"📌 [NEW MSG] Chat ID: {chat_id} | Sender: {msg.sender_id} | Text: '{raw_text}'")
+                            logger.info(f"📌 [NEW MSG] Chat ID: {chat_id} | Sender: {msg.sender_id} | Text: '{raw_text}'")
 
-                        # Permissions check
-                        is_allowed = (msg.sender_id == me.id) or (msg.sender_id in WHITELISTED_USERS)
+                            # Permissions check
+                            is_allowed = (msg.sender_id == me.id) or (msg.sender_id in WHITELISTED_USERS)
 
-                        if is_allowed:
-                            # CHECK EXPLICIT USER REPLIES TO AI MESSAGES
-                            is_ai_reply = False
-                            ai_ids = db.get("ai_msg_ids", [])
+                            if is_allowed:
+                                # CHECK EXPLICIT USER REPLIES TO AI MESSAGES
+                                is_ai_reply = False
+                                ai_ids = db.get("ai_msg_ids", [])
 
-                            # Only trigger AI if the CURRENT message is NOT an AI response itself
-                            if mid not in ai_ids:
-                                replied_msg = getattr(msg, 'replied_to', None)
-                                if replied_msg and hasattr(replied_msg, 'message_id'):
-                                    if replied_msg.message_id in ai_ids:
-                                        is_ai_reply = True
+                                if mid not in ai_ids:
+                                    replied_msg = getattr(msg, 'replied_to', None)
+                                    if replied_msg and hasattr(replied_msg, 'message_id'):
+                                        if replied_msg.message_id in ai_ids:
+                                            is_ai_reply = True
 
-                            if is_ai_reply:
-                                logger.info(f"🧠 [AI REPLY DETECTED] Continuing conversation in chat {chat_id}")
-                                from modules.ai import askgpt_command
-                                await askgpt_command(app, msg, chat_id, chat_type, args=raw_text)
+                                if is_ai_reply:
+                                    logger.info(f"🧠 [AI REPLY DETECTED] Continuing conversation in chat {chat_id}")
+                                    from modules.ai import askgpt_command
+                                    await askgpt_command(app, msg, chat_id, chat_type, args=raw_text)
+                                else:
+                                    await route_command(app, msg, chat_id, chat_type)
                             else:
-                                await route_command(app, msg, chat_id, chat_type)
-                        else:
-                            await check_group_locks(app, msg, chat_id, chat_type)
+                                await check_group_locks(app, msg, chat_id, chat_type)
 
                 await asyncio.sleep(1.5)
 

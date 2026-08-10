@@ -10,3 +10,4 @@ from . import ai
 from . import settings
 from . import system
 from . import others
+from . import market
