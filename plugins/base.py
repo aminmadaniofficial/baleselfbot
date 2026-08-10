@@ -3,7 +3,7 @@ import time
 import platform
 from config import COMMAND_PREFIX
 from core.registry import register
-from core.utils import text_to_speech_fa, create_file_input, get_text_advanced, load_db
+from core.utils import text_to_speech_fa, create_file_input, get_text_advanced, load_db, send_split_message
 
 # ==============================================================================
 # COMPREHENSIVE HELP MANUAL DICTIONARY (100% COVERAGE OF ALL SYSTEM COMMANDS)
@@ -160,6 +160,12 @@ COMMANDS_HELP = {
     "صدا": {"fa": "تبدیل متن به ویس صوتی مایکروسافت [متن یا ریپلای]", "en": "Convert text to Persian Microsoft Speech", "syntax": ".صدا [متن]"},
     "qr": {"fa": "ساخت تصویر بارکد QR سفارشی [متن یا لینک]", "en": "Generate high-res QR code image for text/url", "syntax": ".qr [Text/URL]"},
     "بارکد": {"fa": "ساخت تصویر بارکد QR سفارشی [متن یا لینک]", "en": "Generate high-res QR code image for text/url", "syntax": ".بارکد [متن/لینک]"},
+    "dl": {"fa": "دانلود مستقیم فایل از وب و آپلود در بله [تا ۲۰ مگابایت]", "en": "Download direct web file to chat", "syntax": ".dl [URL]"},
+    "دانلود": {"fa": "دانلود مستقیم فایل از وب و آپلود در بله [تا ۲۰ مگابایت]", "en": "Download direct web file to chat", "syntax": ".دانلود [لینک]"},
+    "wiki": {"fa": "جستجوی خلاصه مقاله در دانشنامه ویکی‌پدیا", "en": "Search Persian Wikipedia article summary", "syntax": ".wiki [Query]"},
+    "ویکی": {"fa": "جستجوی خلاصه مقاله در دانشنامه ویکی‌پدیا", "en": "Search Persian Wikipedia article summary", "syntax": ".ویکی [موضوع]"},
+    "azan": {"fa": "دریافت اوقات شرعی دقیق شهرها (سرویس آوینی)", "en": "Fetch Aviny Islamic prayer times for Iranian cities", "syntax": ".azan [City]"},
+    "اذان": {"fa": "دریافت اوقات شرعی دقیق شهرها (سرویس آوینی)", "en": "Fetch Aviny Islamic prayer times for Iranian cities", "syntax": ".اذان [نام شهر]"},
     "weather": {"fa": "مشاهده وضعیت آب و هوای تهران", "en": "Fetch current weather statistics", "syntax": ".weather"},
     "هوا": {"fa": "مشاهده وضعیت آب و هوای تهران", "en": "Fetch current weather statistics", "syntax": ".هوا"},
     "quran": {"fa": "دریافت آیه تصادفی قرآن همراه با ترجمه", "en": "Retrieve Quranic ayah with translation", "syntax": ".quran"},
@@ -204,6 +210,8 @@ COMMANDS_HELP = {
     "فعال": {"fa": "فعال‌سازی مجدد یک پلاگین غیرفعال [نام]", "en": "Enable a disabled plugin dynamically", "syntax": ".فعال [نام_پلاگین]"},
     "reload": {"fa": "بارگذاری زنده و آنی تمام پلاگین‌ها بدون ریستارت", "en": "Reload all plugins dynamically in runtime", "syntax": ".reload"},
     "ریلود": {"fa": "بارگذاری زنده و آنی تمام پلاگین‌ها بدون ریستارت", "en": "Reload all plugins dynamically in runtime", "syntax": ".ریلود"},
+    "run": {"fa": "اجرای مستقیم تکه‌کدهای پایتون در محیط ایزوله چت", "en": "Execute Python code snippet in isolated sandbox", "syntax": ".run [Python Code]"},
+    "اجرا": {"fa": "اجرای مستقیم تکه‌کدهای پایتون در محیط ایزوله چت", "en": "Execute Python code snippet in isolated sandbox", "syntax": ".اجرا [کد پایتون]"},
     "sys": {"fa": "مشاهده وضعیت سلامت رم، پردازنده و هاست", "en": "Show CPU and RAM utilization diagnostics", "syntax": ".sys"},
     "سیستم": {"fa": "مشاهده وضعیت سلامت رم، پردازنده و هاست", "en": "Show CPU and RAM utilization diagnostics", "syntax": ".سیستم"},
     "shell": {"fa": "اجرای مستقیم دستور در ترمینال لینوکس [دستور شل]", "en": "Run Linux shell command and fetch output", "syntax": ".shell [Linux Command]"},
@@ -255,7 +263,7 @@ async def font_command(app, msg, chat_id, chat_type, args):
     fonts = [
         ("𝖲𝖺𝗇𝗌", text_input.translate(str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", "𝖺𝖻𝖼𝖽𝖾𝖿𝗀𝗁𝗂爆𝗄𝗅𝗆𝗇𝗈𝗉𝗊𝗋𝗌𝗍𝗎𝗏𝗐𝗑𝗒𝗓𝖠𝖡𝖢𝖣𝖤𝖥𝖦𝖧𝖨𝖩𝖪𝖫𝖬𝖭𝖮𝖯𝖰𝖱𝖲𝖳𝖴𝖵𝖶𝖷𝖸𝖹"))),
         ("𝑩𝒐𝒍𝒅", text_input.translate(str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", "𝒂𝒃𝒄𝒅𝒆𝒇𝒈𝒉𝒊𝒋𝒌𝒍𝒎𝒏𝒐𝒑𝒒𝒓𝒔𝒕𝒖𝒗𝒘𝒙𝒚𝒛𝑨𝑩𝑪𝑫𝑬𝑭𝑮𝑯𝑰𝑵𝑲𝑳𝑴𝑵𝑶𝑷𝑸𝑹𝑺𝑻𝑼𝑽𝑾𝑿𝒀𝒁"))),
-        ("𝙼𝚘𝚗𝚘", text_input.translate(str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", "𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝗍𝚞𝚟𝚠𝚡𝚢𝚣𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝙌𝚁𝚂𝑻𝚄𝑉𝚆𝚇𝚈𝑌"))),
+        ("𝙼𝚘𝚗𝚘", text_input.translate(str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", "𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕ᒥ𝚗𝚘𝚙𝚚𝚛𝚜𝗍𝚞𝚟𝚠𝚡𝚢𝚣𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝙌𝚁𝚂𝑻𝑈𝑉𝚆𝚇𝚈𝑌"))),
     ]
 
     out = "🎨 *فونت‌های ساخت‌شده:*\n\n"
@@ -267,12 +275,12 @@ async def font_command(app, msg, chat_id, chat_type, args):
 @register(["help", "راهنما", "کمک"])
 async def help_command(app, msg, chat_id, chat_type, args):
     """Main Help Manual System with single-command deep lookup."""
+    from core.utils import send_split_message
     prefix = COMMAND_PREFIX
     arg_clean = args.strip().lower()
 
     # 1. Single Command Deep Lookup
     if arg_clean and arg_clean not in ("fa", "en"):
-        # Strip leading prefix if user typed ".help .ارز"
         if prefix and arg_clean.startswith(prefix):
             arg_clean = arg_clean[len(prefix):].strip()
 
@@ -359,6 +367,9 @@ async def help_command(app, msg, chat_id, chat_type, args):
             f"🗣 **7. Audio & Utility Tools:**\n"
             f"• `{prefix}tts` [Text] : Convert text to Microsoft Neural Persian Speech\n"
             f"• `{prefix}qr` [Text/URL] : Generate high-resolution QR code photo\n"
+            f"• `{prefix}dl` [URL] : Download direct file from web to chat (Max 20MB)\n"
+            f"• `{prefix}wiki` [Query] : Search Persian Wikipedia article summary\n"
+            f"• `{prefix}azan` [City] : Fetch Aviny Islamic prayer times for Iranian cities\n"
             f"• `{prefix}weather` / `{prefix}time` / `{prefix}date` : Weather, time and date stats\n"
             f"• `{prefix}quran` / `{prefix}crypto` : Random Ayah and Bitcoin price\n\n"
 
@@ -377,13 +388,14 @@ async def help_command(app, msg, chat_id, chat_type, args):
             f"• `{prefix}plugins` : List all active and disabled plugins\n"
             f"• `{prefix}disable` [Plugin] / `{prefix}enable` [Plugin] : Enable/disable plugin\n"
             f"• `{prefix}reload` : Reload all plugins dynamically in runtime\n"
+            f"• `{prefix}run` [Python Code] : Execute Python code snippet in isolated sandbox\n"
             f"• `{prefix}sys` : CPU and RAM usage diagnostics\n"
             f"• `{prefix}shell` [Linux Command] : Execute terminal commands safely\n"
             f"• `{prefix}backup` : Backup local database configurations\n\n"
 
             f"💡 *Type `{prefix}help [command]` for detailed manual of a specific command!*"
         )
-        await app.send_message(chat_id=chat_id, text=help_text, chat_type=chat_type)
+        await send_split_message(app=app, chat_id=chat_id, text=help_text, chat_type=chat_type)
         return
 
     # 3. Complete Categorized Persian Manual (Default)
@@ -448,12 +460,12 @@ async def help_command(app, msg, chat_id, chat_type, args):
 
         f"🗣 **۷. صدا و ابزارهای کاربردی:**\n"
         f"• `{prefix}گفتار` / `{prefix}tts` [متن] : تبدیل متن به ویس با صدای نیورال مایکروسافت\n"
-        f"• `{prefix}اذان` / `{prefix}azan` [نام شهر] : دریافت اوقات شرعی دقیق شهرها\n"
+        f"• `{prefix}بارکد` / `{prefix}qr` [متن/لینک] : ساخت عکس بارکد QR سفارشی\n"
         f"• `{prefix}دانلود` / `{prefix}dl` [لینک] : دانلود مستقیم فایل از وب و آپلود در بله\n"
         f"• `{prefix}ویکی` / `{prefix}wiki` [موضوع] : جستجوی خلاصه مقاله در دانشنامه ویکی‌پدیا\n"
-        f"• `{prefix}بارکد` / `{prefix}qr` [متن/لینک] : ساخت عکس بارکد QR سفارشی\n"
-        f"• `{prefix}هوا` / `{prefix}ساعت` / `{prefix}تاریخ` : وضعیت آب‌وهوا، زمان و تاریخ\n\n"
-
+        f"• `{prefix}اذان` / `{prefix}azan` [نام شهر] : دریافت اوقات شرعی دقیق شهرها\n"
+        f"• `{prefix}هوا` / `{prefix}ساعت` / `{prefix}تاریخ` : وضعیت آب‌وهوا، زمان و تاریخ\n"
+        f"• `{prefix}قرآن` / `{prefix}رمزارز` : آیه تصادفی و قیمت بیت‌کوین\n\n"
 
         f"📢 **۸. پخش همگانی و استخراج:**\n"
         f"• `{prefix}استخراج` : استخراج آیدی عددی اعضای گروه در دیتابیس\n"
@@ -471,65 +483,12 @@ async def help_command(app, msg, chat_id, chat_type, args):
         f"• `{prefix}غیرفعال` / `{prefix}disable` [نام] : غیرفعال‌سازی دستی یک پلاگین\n"
         f"• `{prefix}فعال` / `{prefix}enable` [نام] : فعال‌سازی مجدد یک پلاگین\n"
         f"• `{prefix}ریلود` / `{prefix}reload` : بارگذاری زنده و آنی تمام پلاگین‌ها\n"
+        f"• `{prefix}اجرا` / `{prefix}run` [کد پایتون] : اجرای مستقیم تکه‌کدهای پایتون در چت\n"
         f"• `{prefix}سیستم` / `{prefix}sys` : آمار رم و پردازنده هاست\n"
         f"• `{prefix}شل` [دستور لینوکس] : اجرای مستقیم دستورات ترمینال\n"
         f"• `{prefix}بکاپ` : تهیه نسخه پشتیبان از دیتابیس تنظیمات\n\n"
-        f"• `{prefix}اجرا` / `{prefix}run` [کد پایتون] : اجرای مستقیم تکه‌کدهای پایتون در چت\n"
 
         f"💡 **برای راهنمای اختصاصی و نحوه استفاده هر دستور:**\n"
         f"`{prefix}help [اسم دستور]` (مثلا: `{prefix}help ocr` یا `{prefix}help qr` یا `{prefix}help plugins`)"
     )
-    await app.send_message(chat_id=chat_id, text=help_text, chat_type=chat_type)
-
-
-@register(["stats", "آمار"])
-async def stats_command(app, msg, chat_id, chat_type, args):
-    """Displays system diagnostics and active commands count."""
-    py_version = sys.version.split()[0]
-    os_name = platform.system() + " " + platform.release()
-    from core.registry import COMMANDS
-    stats_text = (
-        f"📊 *آمار و سلامت سلف‌بات:*\n\n"
-        f"• *سیستم‌عامل:* `{os_name}`\n"
-        f"• *نسخه پایتون:* `{py_version}`\n"
-        f"• *تعداد دستورات فعال:* `{len(COMMANDS)} دستور`\n"
-        f"• *وضعیت سرویس:* `پایدار و آماده به کار ✅`"
-    )
-    await app.send_message(chat_id=chat_id, text=stats_text, chat_type=chat_type)
-
-
-@register(["whoami", "من", "پروفایل"])
-async def whoami_command(app, msg, chat_id, chat_type, args):
-    """Displays self profile details."""
-    me = await app.get_me()
-    info = (
-        f"👤 *مشخصات حساب شما:*\n\n"
-        f"• *نام:* `{me.name}`\n"
-        f"• *آیدی عددی:* `{me.id}`\n"
-        f"• *وضعیت کلاینت:* `آنلاین 🟢`"
-    )
-    await app.send_message(chat_id=chat_id, text=info, chat_type=chat_type)
-
-
-@register(["info", "اطلاعات"])
-async def info_command(app, msg, chat_id, chat_type, args):
-    """Fetches specifications of a user via reply or ID."""
-    target_user_id = None
-    if hasattr(msg, 'replied_to') and msg.replied_to:
-        target_user_id = msg.replied_to.sender_id
-    elif args.strip().isdigit():
-        target_user_id = int(args.strip())
-
-    if target_user_id:
-        try:
-            user = await app.load_user(chat_id=target_user_id, chat_type=1)
-            info = (
-                f"ℹ️ *مشخصات کاربر مورد نظر:*\n\n"
-                f"• *نام کاربری:* `{getattr(user, 'name', 'نامشخص')}`\n"
-                f"• *شناسه عددی:* `{target_user_id}`"
-            )
-            await app.send_message(chat_id=chat_id, text=info, chat_type=chat_type)
-        except Exception as e:
-            await app.send_message(chat_id=chat_id, text=f"❌ خطا در استعلام مشخصات کاربر: {e}", chat_type=chat_type)
-    else:
-        await app.send_message(chat_id=chat_id, text="⚠️ لطفا روی کاربر ریپلای کنید یا آیدی عددی او را بنویسید.", chat_type=chat_type)
+    await send_split_message(app=app, chat_id=chat_id, text=help_text, chat_type=chat_type)

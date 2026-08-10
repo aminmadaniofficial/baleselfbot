@@ -2,8 +2,10 @@ import re
 import os
 import json
 import inspect
+import asyncio
 import logging
 import edge_tts
+from typing import List, Any
 from aiobale.types import FileInput
 
 logger = logging.getLogger("Utils")
@@ -51,6 +53,63 @@ def get_text_advanced(msg) -> str:
         if "messagecontent" not in m.lower() and len(m) > 0:
             return m
     return ""
+
+
+def split_text_chunks(text: str, max_length: int = 3500) -> List[str]:
+    """
+    Splits long text into manageable chunks respecting paragraph and line boundaries,
+    preventing MaxMessageLengthExceed error from Bale API.
+    """
+    if len(text) <= max_length:
+        return [text]
+
+    chunks = []
+    lines = text.split("\n")
+    current_chunk = ""
+
+    for line in lines:
+        if len(current_chunk) + len(line) + 1 <= max_length:
+            current_chunk += line + "\n"
+        else:
+            if current_chunk.strip():
+                chunks.append(current_chunk.strip())
+            if len(line) > max_length:
+                for i in range(0, len(line), max_length):
+                    chunks.append(line[i:i + max_length])
+                current_chunk = ""
+            else:
+                current_chunk = line + "\n"
+
+    if current_chunk.strip():
+        chunks.append(current_chunk.strip())
+
+    return chunks
+
+
+async def send_split_message(app: Any, chat_id: int, text: str, chat_type: Any, reply_to: Any = None, max_length: int = 3500) -> List[Any]:
+    """
+    Sends long text messages sequentially in chunks to avoid Bale MaxMessageLengthExceed limits.
+    Returns list of sent message objects.
+    """
+    chunks = split_text_chunks(text, max_length=max_length)
+    sent_messages = []
+
+    for i, chunk in enumerate(chunks):
+        current_reply = reply_to if i == 0 else None
+        try:
+            msg_obj = await app.send_message(
+                chat_id=chat_id,
+                text=chunk,
+                chat_type=chat_type,
+                reply_to=current_reply
+            )
+            if msg_obj:
+                sent_messages.append(msg_obj)
+            await asyncio.sleep(0.4)
+        except Exception as e:
+            logger.error(f"Error sending message chunk {i+1}: {e}")
+
+    return sent_messages
 
 
 async def text_to_speech_fa(text: str, file_path: str):
