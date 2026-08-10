@@ -6,7 +6,7 @@ from .registry import register
 from .utils import text_to_speech_fa, create_file_input, get_text_advanced, load_db
 
 # ==============================================================================
-# COMPREHENSIVE HELP MANUAL DICTIONARY (100% COVERAGE OF ALL MODULE COMMANDS)
+# COMPREHENSIVE HELP MANUAL DICTIONARY (100% COVERAGE)
 # ==============================================================================
 COMMANDS_HELP = {
     # --- BASE & INFO ---
@@ -117,8 +117,8 @@ COMMANDS_HELP = {
     "stt": {"fa": "رونویسی متن ویس صوتی [با ریپلای روی صدا]", "en": "Transcribe audio/voice message into text", "syntax": ".stt (Reply)"},
     "متن": {"fa": "رونویسی متن ویس صوتی [با ریپلای روی صدا]", "en": "Transcribe audio/voice message into text", "syntax": ".متن (ریپلای)"},
     "گفتار_به_متن": {"fa": "رونویسی متن ویس صوتی [با ریپلای روی صدا]", "en": "Transcribe audio/voice message into text", "syntax": ".گفتار_به_متن (ریپلای)"},
-    "s2t": {"fa": "رونویسی متن ویس صوتی [با ریپلای روی صدا]", "en": "Transcribe audio/voice message into text", "syntax": ".s2t (Reply)"},
-    "رونویسی": {"fa": "رونویسی متن ویس صوتی [با ریپلای روی صدا]", "en": "Transcribe audio/voice message into text", "syntax": ".رونویسی (ریپلای)"},
+    "trans": {"fa": "ترجمه روان متون به زبان دلخواه [متن یا ریپلای]", "en": "Translate text to target language via Gemini", "syntax": ".trans [Language] [Text]"},
+    "ترجمه": {"fa": "ترجمه روان متون به زبان دلخواه [متن یا ریپلای]", "en": "Translate text to target language via Gemini", "syntax": ".ترجمه [زبان] [متن]"},
     "models": {"fa": "مشاهده لیست کامل مدل‌های هوش مصنوعی فعال بله", "en": "List available AI models", "syntax": ".models"},
     "مدل‌ها": {"fa": "مشاهده لیست کامل مدل‌های هوش مصنوعی فعال بله", "en": "List available AI models", "syntax": ".مدل‌ها"},
 
@@ -130,14 +130,31 @@ COMMANDS_HELP = {
     "سکه": {"fa": "تابلو قیمت لحظه‌ای طلا، سکه، ارزهای رایج و رمزارزها", "en": "Fetch real-time Gold, Coins, Currency & Crypto rates", "syntax": ".سکه"},
     "قیمت": {"fa": "تابلو قیمت لحظه‌ای طلا، سکه، ارزهای رایج و رمزارزها", "en": "Fetch real-time Gold, Coins, Currency & Crypto rates", "syntax": ".قیمت"},
     "بازار": {"fa": "تابلو قیمت لحظه‌ای طلا، سکه، ارزهای رایج و رمزارزها", "en": "Fetch real-time Gold, Coins, Currency & Crypto rates", "syntax": ".بازار"},
+    "alert": {"fa": "تنظیم هشدار سقف/کف قیمت بازار", "en": "Set price alert threshold", "syntax": ".alert [symbol] [> or <] [price]"},
+    "هشدار": {"fa": "تنظیم هشدار سقف/کف قیمت بازار", "en": "Set price alert threshold", "syntax": ".هشدار [نماد] [> یا <] [قیمت]"},
+    "alerts": {"fa": "مشاهده لیست هشدارهای قیمت ثبت‌شده", "en": "List all active price alerts", "syntax": ".alerts"},
+    "هشدارها": {"fa": "مشاهده لیست هشدارهای قیمت ثبت‌شده", "en": "List all active price alerts", "syntax": ".هشدارها"},
+    "toggle_alert": {"fa": "فعال/غیرفعال کردن موقت هشدار قیمت [ID]", "en": "Toggle active state of alert by ID", "syntax": ".toggle_alert [ID]"},
+    "تغییر_هشدار": {"fa": "فعال/غیرفعال کردن موقت هشدار قیمت [ID]", "en": "Toggle active state of alert by ID", "syntax": ".تغییر_هشدار [آیدی]"},
+    "del_alert": {"fa": "حذف کامل هشدار قیمت از دیتابیس [ID]", "en": "Delete price alert by ID", "syntax": ".del_alert [ID]"},
+    "حذف_هشدار": {"fa": "حذف کامل هشدار قیمت از دیتابیس [ID]", "en": "Delete price alert by ID", "syntax": ".حذف_هشدار [آیدی]"},
     "wallet": {"fa": "دریافت موجودی کیف پول دیجیتال بله شما (ریال)", "en": "Retrieve digital wallet balance in Rial", "syntax": ".wallet"},
     "کیف_پول": {"fa": "دریافت موجودی کیف پول دیجیتال بله شما (ریال)", "en": "Retrieve digital wallet balance in Rial", "syntax": ".کیف_پول"},
+
+    # --- CHAT MONITORING ---
+    "chat_mode": {"fa": "تغییر مود مانیتورینگ چت‌ها (all = همه / selected = انتخابی)", "en": "Set monitoring mode (all or selected)", "syntax": ".chat_mode [all | selected]"},
+    "حالت_مانیتور": {"fa": "تغییر مود مانیتورینگ چت‌ها (همه / انتخابی)", "en": "Set monitoring mode (all or selected)", "syntax": ".حالت_مانیتور [همه | انتخابی]"},
+    "chats": {"fa": "مشاهده لیست چت‌های انتخابی تحت پایش سلف‌بات", "en": "List monitored chats", "syntax": ".chats"},
+    "چت‌ها": {"fa": "مشاهده لیست چت‌های انتخابی تحت پایش سلف‌بات", "en": "List monitored chats", "syntax": ".چت‌ها"},
+    "add_chat": {"fa": "افزودن چت جاری به لیست پایش انتخابی", "en": "Add chat to monitoring list", "syntax": ".add_chat [CHAT_ID]"},
+    "افزودن_چت": {"fa": "افزودن چت جاری به لیست پایش انتخابی", "en": "Add chat to monitoring list", "syntax": ".افزودن_چت [آیدی_چت]"},
+    "del_chat": {"fa": "حذف چت جاری از لیست پایش انتخابی", "en": "Remove chat from monitoring list", "syntax": ".del_chat [CHAT_ID]"},
+    "حذف_چت": {"fa": "حذف چت جاری از لیست پایش انتخابی", "en": "Remove chat from monitoring list", "syntax": ".حذف_چت [آیدی_چت]"},
 
     # --- AUDIO & SERVICES ---
     "tts": {"fa": "تبدیل متن به ویس صوتی مایکروسافت [متن یا ریپلای]", "en": "Convert text to Persian Microsoft Speech", "syntax": ".tts [Text]"},
     "گفتار": {"fa": "تبدیل متن به ویس صوتی مایکروسافت [متن یا ریپلای]", "en": "Convert text to Persian Microsoft Speech", "syntax": ".گفتار [متن]"},
     "صدا": {"fa": "تبدیل متن به ویس صوتی مایکروسافت [متن یا ریپلای]", "en": "Convert text to Persian Microsoft Speech", "syntax": ".صدا [متن]"},
-    "گویش": {"fa": "تبدیل متن به ویس صوتی مایکروسافت [متن یا ریپلای]", "en": "Convert text to Persian Microsoft Speech", "syntax": ".گویش [متن]"},
     "weather": {"fa": "مشاهده وضعیت آب و هوای تهران", "en": "Fetch current weather statistics", "syntax": ".weather"},
     "هوا": {"fa": "مشاهده وضعیت آب و هوای تهران", "en": "Fetch current weather statistics", "syntax": ".هوا"},
     "quran": {"fa": "دریافت آیه تصادفی قرآن همراه با ترجمه", "en": "Retrieve Quranic ayah with translation", "syntax": ".quran"},
@@ -152,7 +169,6 @@ COMMANDS_HELP = {
     # --- BROADCAST & EXTRACTION ---
     "extract_members": {"fa": "استخراج آیدی عددی اعضای گروه و ذخیره دیتابیس", "en": "Extract group member IDs locally", "syntax": ".extract_members"},
     "استخراج": {"fa": "استخراج آیدی عددی اعضای گروه و ذخیره دیتابیس", "en": "Extract group member IDs locally", "syntax": ".استخراج"},
-    "getmembers": {"fa": "استخراج آیدی عددی اعضای گروه و ذخیره دیتابیس", "en": "Extract group member IDs locally", "syntax": ".getmembers"},
     "broadcast": {"fa": "ارسال پیام همگانی به تمام گفتگوی فعال [متن]", "en": "Broadcast a message to active chats", "syntax": ".broadcast [Text]"},
     "پخش": {"fa": "ارسال پیام همگانی به تمام گفتگوی فعال [متن]", "en": "Broadcast a message to active chats", "syntax": ".پخش [متن]"},
 
@@ -243,7 +259,7 @@ async def help_command(app, msg, chat_id, chat_type, args):
 
     # 1. Single Command Deep Lookup
     if arg_clean and arg_clean not in ("fa", "en"):
-        # Strip leading dot/prefix if user typed ".help .ارز"
+        # Strip leading prefix if user typed ".help .ارز"
         if prefix and arg_clean.startswith(prefix):
             arg_clean = arg_clean[len(prefix):].strip()
 
@@ -274,8 +290,9 @@ async def help_command(app, msg, chat_id, chat_type, args):
             f"📌 *Core & Info:* `ping`, `stats`, `whoami`, `id`, `info`, `font`\n"
             f"💬 *Messages:* `del`, `delete_messages`, `pin`, `unpin`, `edit`, `fwd`, `seen`\n"
             f"👥 *Group Admins:* `kick`, `ban`, `unban`, `make_admin`, `lock`, `unlock`, `welcome`\n"
-            f"🧠 *AI & Multimodal:* `askgpt`, `heavygpt`, `yt`, `stt`, `models`\n"
-            f"📈 *Market & Money:* `rates`, `market`, `wallet`\n"
+            f"🧠 *AI & Multimodal:* `askgpt`, `heavygpt`, `yt`, `stt`, `trans`, `models`\n"
+            f"📈 *Market & Money:* `rates`, `market`, `alert`, `alerts`, `wallet`\n"
+            f"🎯 *Chat Monitor:* `chat_mode`, `chats`, `add_chat`, `del_chat`\n"
             f"🗣 *Audio & Tools:* `tts`, `weather`, `crypto`, `time`, `quran`\n"
             f"📢 *Broadcast:* `extract_members`, `broadcast`\n"
             f"⏰ *Reminders:* `remind`\n"
@@ -327,37 +344,47 @@ async def help_command(app, msg, chat_id, chat_type, args):
         f"• `{prefix}بپرس` / `{prefix}askgpt` [متن] : سوال از Gemini Flash Lite\n"
         f"• `{prefix}قوی` / `{prefix}heavygpt` [متن] : سوال از مدل قوی Gemini 3.5 Flash\n"
         f"• `{prefix}فلاش` / `{prefix}سریع` [متن] : سوال از مدل فوق‌سریع Gemma\n"
+        f"• `{prefix}ترجمه` / `{prefix}trans` [زبان] [متن] : ترجمه روان متون به زبان دلخواه\n"
         f"• `{prefix}یوتیوب` / `{prefix}yt` [لینک] : تحلیل ویدیوهای یوتیوب (بدون مصرف حجم سرور)\n"
         f"• `{prefix}متن` / `{prefix}stt` (ریپلای رو ویس) : رونویسی صوت و ویس به متن فارسی\n"
         f"• `{prefix}مدل‌ها` : نمایش تمام مدل‌های هوش مصنوعی فعال\n\n"
 
         f"📈 **۵. بازار، طلا، ارز و مالی:**\n"
         f"• `{prefix}ارز` / `{prefix}طلا` / `{prefix}سکه` / `{prefix}قیمت` : تابلو قیمت لحظه‌ای طلا، دلار، سکه و کریپتو\n"
+        f"• `{prefix}هشدار` [نماد] [> یا <] [قیمت] : تنظیم هشدار نوسان قیمت بازار\n"
+        f"• `{prefix}هشدارها` / `{prefix}alerts` : لیست هشدارهای قیمت ثبت‌شده\n"
+        f"• `{prefix}تغییر_هشدار` [ID] / `{prefix}حذف_هشدار` [ID] : مدیریت هشدارهای قیمت\n"
         f"• `{prefix}کیف_پول` / `{prefix}wallet` : مشاهده موجودی کیف پول بله\n\n"
 
-        f"🗣 **۶. صدا و ابزارهای کاربردی:**\n"
+        f"🎯 **۶. مدیریت پایش چت‌ها (Monitoring):**\n"
+        f"• `{prefix}حالت_مانیتور` / `{prefix}chat_mode` [همه|انتخابی] : تغییر مود مانیتورینگ چت‌ها\n"
+        f"• `{prefix}چت‌ها` / `{prefix}chats` : لیست چت‌های انتخابی تحت پایش\n"
+        f"• `{prefix}افزودن_چت` / `{prefix}add_chat` : افزودن چت جاری به لیست پایش\n"
+        f"• `{prefix}حذف_چت` / `{prefix}del_chat` : حذف چت جاری از لیست پایش\n\n"
+
+        f"🗣 **۷. صدا و ابزارهای کاربردی:**\n"
         f"• `{prefix}گفتار` / `{prefix}tts` [متن] : تبدیل متن به ویس با صدای نیورال مایکروسافت\n"
         f"• `{prefix}هوا` / `{prefix}ساعت` / `{prefix}تاریخ` : وضعیت آب‌وهوا، زمان و تاریخ\n"
         f"• `{prefix}قرآن` / `{prefix}رمزارز` : آیه تصادفی و قیمت بیت‌کوین\n\n"
 
-        f"📢 **۷. پخش همگانی و استخراج:**\n"
+        f"📢 **۸. پخش همگانی و استخراج:**\n"
         f"• `{prefix}استخراج` : استخراج آیدی عددی اعضای گروه در دیتابیس\n"
         f"• `{prefix}پخش` [متن] : ارسال پیام همگانی به تمام گفتگوهای فعال\n\n"
 
-        f"⏰ **۸. زمان‌بندی و یادآورها:**\n"
+        f"⏰ **۹. زمان‌بندی و یادآورها:**\n"
         f"• `{prefix}یادآور` [دقیقه] [متن] : تنظیم یادآور خودکار برای آینده\n\n"
 
-        f"⚙️ **۹. تنظیمات، میانبرها و پاسخ خودکار:**\n"
+        f"⚙️ **۱۰. تنظیمات، میانبرها و پاسخ خودکار:**\n"
         f"• `{prefix}نام_مستعار` / `{prefix}لیست_مستعار` : ساخت کلید میانبر دستورات\n"
         f"• `{prefix}افزودن_پاسخ` / `{prefix}پاسخ‌ها` : پاسخ هوشمند خودکار به کلمات\n\n"
 
-        f"🖥️ **۱۰. سیستم و ترمینال هاست:**\n"
+        f"🖥️ **۱۱. سیستم و ترمینال هاست:**\n"
         f"• `{prefix}سیستم` / `{prefix}sys` : آمار رم و پردازنده هاست\n"
         f"• `{prefix}شل` [دستور لینوکس] : اجرای مستقیم دستورات ترمینال\n"
         f"• `{prefix}بکاپ` : تهیه نسخه پشتیبان از دیتابیس تنظیمات\n\n"
 
         f"💡 **برای راهنمای اختصاصی و نحوه استفاده هر دستور:**\n"
-        f"`{prefix}help [اسم دستور]` (مثلا: `{prefix}help ارز` یا `{prefix}help yt` یا `{prefix}help پاکسازی`)"
+        f"`{prefix}help [اسم دستور]` (مثلا: `{prefix}help ارز` یا `{prefix}help alert` یا `{prefix}help ترجمه`)"
     )
     await app.send_message(chat_id=chat_id, text=help_text, chat_type=chat_type)
 

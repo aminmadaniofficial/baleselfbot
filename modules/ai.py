@@ -381,3 +381,60 @@ async def speech_to_text_command(app, msg, chat_id, chat_type, args):
             )
         except Exception:
             pass
+
+@register(["trans", "ترجمه", "translate"])
+async def translate_command(app, msg, chat_id, chat_type, args):
+    """Translates text or replied message into target language using Gemini AI."""
+    if not AI_AVAILABLE:
+        await app.send_message(chat_id=chat_id, text="⚠️ سرویس هوش مصنوعی غیرفعال است.", chat_type=chat_type)
+        return
+
+    text_to_translate = ""
+    target_lang = "فارسی"
+
+    # Check arguments or replied text
+    if hasattr(msg, 'replied_to') and msg.replied_to:
+        text_to_translate = get_text_advanced(msg.replied_to).strip()
+        if args.strip():
+            target_lang = args.strip()
+    else:
+        parts = args.strip().split(maxsplit=1)
+        if len(parts) == 2:
+            target_lang = parts[0]
+            text_to_translate = parts[1]
+        elif len(parts) == 1:
+            text_to_translate = parts[0]
+
+    if not text_to_translate:
+        await app.send_message(
+            chat_id=chat_id,
+            text="⚠️ لطفا متن مورد نظر را بنویسید یا روی یک پیام ریپلای کنید.\nمثال: `.ترجمه انگلیسی سلام چطوری؟` یا ریپلای با `.ترجمه`",
+            chat_type=chat_type
+        )
+        return
+
+    prompt = f"لطفاً متن زیر را با دقت بالا، دقیق و روان به زبان {target_lang} ترجمه کن:\n\n{text_to_translate}"
+    status = await app.send_message(chat_id=chat_id, text="🌐 *در حال ترجمه...*", chat_type=chat_type, reply_to=msg)
+
+    try:
+        response = ai_client.models.generate_content(
+            model='gemini-3.1-flash-lite',
+            contents=[prompt]
+        )
+        try:
+            await app.delete_message(message_id=status.message_id, message_date=0, chat_id=chat_id, chat_type=chat_type)
+        except Exception:
+            pass
+
+        await app.send_message(
+            chat_id=chat_id,
+            text=f"🌐 **ترجمه به ({target_lang}):**\n\n{response.text}",
+            chat_type=chat_type,
+            reply_to=msg
+        )
+    except Exception as e:
+        logger.error(f"Translation error: {e}")
+        try:
+            await app.edit_message(chat_id=chat_id, message_id=status.message_id, text=f"❌ خطای ترجمه: {e}", chat_type=chat_type)
+        except Exception:
+            pass

@@ -1,4 +1,3 @@
-# Import submodules to trigger command registrations inside modules/registry.py
 from . import base
 from . import messages
 from . import groups
@@ -11,3 +10,4 @@ from . import settings
 from . import system
 from . import others
 from . import market
+from . import monitor
